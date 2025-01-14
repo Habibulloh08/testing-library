@@ -48,7 +48,9 @@ describe('App Component', () => {
             name: /view counter/i
         })
         fireEvent.click(button)
-        const skills = screen.getByRole('heading')
+        const skills = screen.getByRole('button', {
+            name: /increment/i
+        })
         expect(skills).toBeInTheDocument()
     })
 });
