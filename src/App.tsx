@@ -56,7 +56,9 @@ function App() {
         footer={null}
         onCancel={() => setExchangeModal(false)}
       >
-        <ExchangeModal />
+        <ExchangeModal
+          setExchangeModal={setExchangeModal}
+        />
       </Modal>
     </>
   )
