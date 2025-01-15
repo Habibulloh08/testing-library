@@ -1,15 +1,16 @@
 import { Button, Input, message, } from "antd"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useChangeSwap, useExchangeData } from "../api/Exchange";
+import { useInView } from "react-intersection-observer";
 
 
 const ExchangeModal = ({ setExchangeModal }: any) => {
+    const { ref, inView } = useInView();
     const { mutate: addMutationExchange, status } = useChangeSwap();
     const {
         data: exchange,
         fetchNextPage,
         hasNextPage,
-        isFetchingNextPage,
         isLoading
     } = useExchangeData([])
     const [buyRate, setBuyRate] = useState<string | number | undefined>(undefined);
@@ -39,6 +40,11 @@ const ExchangeModal = ({ setExchangeModal }: any) => {
         }
     };
     const data = exchange?.pages?.flatMap((page: any) => page) || [];
+    useEffect(() => {
+        if (inView) {
+            hasNextPage ? fetchNextPage() : null;
+        }
+    }, [fetchNextPage, inView]);
     return (
         <div>
             <h1 className="text-center text-lg font-semibold">ExchangeModal</h1>
@@ -64,14 +70,17 @@ const ExchangeModal = ({ setExchangeModal }: any) => {
                 Изменить курс
             </Button>
             <div className="max-h-[400px] overflow-scroll mt-2">
-                {data?.map((item: any) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                        {/* <p>{item.id}</p> */}
-                        {/* <p>{item.createdAt}</p> */}
-                        <p>{item.buyRate}</p>
-                        <p>{item.saleRate}</p>
-                    </div>
-                ))}
+                {
+                    isLoading ? <p>Loading...</p> :
+                        data?.length === 0 ? <p>Нет данных</p> :
+                            data?.map((item: any) => (
+                                <div key={item.id} className="flex items-center gap-2">
+                                    {/* <p>{item.id}</p> */}
+                                    {/* <p>{item.createdAt}</p> */}
+                                    <p>{item.buyRate}</p>
+                                    <p>{item.saleRate}</p>
+                                </div>
+                            ))}
             </div>
         </div>
     );

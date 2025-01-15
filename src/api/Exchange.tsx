@@ -1,13 +1,5 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from ".";
-import { message } from "antd";
-
-const getQueryKey = (query: any) => {
-    // const queryClient = useQueryClient()
-    // queryClient.invalidateQueries({ queryKey: query });
-    console.log(query, 'q');
-
-}
 
 //get
 
@@ -23,7 +15,6 @@ const exchangeData = async (date: string[] | undefined, pageIndex: number) => {
 export const useExchangeData = (
     date: string[] | undefined,
 ) => {
-    getQueryKey(date)
     return useInfiniteQuery({
         queryKey: ["exchangeData", date],
         queryFn: ({ pageParam = 1 }) => {
@@ -49,10 +40,6 @@ export const useExchangeData = (
 
 export const useChangeSwap = () => {
     const queryClient = useQueryClient()
-
-    const data = queryClient.getQueryData(['exchangeData', []])
-    console.log(data, 'data');
-
     const mutation = useMutation({
         mutationFn: (
             data: {
@@ -61,10 +48,9 @@ export const useChangeSwap = () => {
                 exchangeRateOfObmen: number;
             }) => api.post("/cashflow/exchange-rates", data),
 
-        onSuccess: (_, __, context) => {
-            // `context.date` orqali `date`ni olish
-            // queryClient
-            console.log(context, 'cont');
+        onSuccess: () => {
+
+            queryClient.invalidateQueries({ queryKey: ['exchangeData'] });
 
         },
     });
