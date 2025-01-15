@@ -1,8 +1,18 @@
 
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import App from '../App';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
+const renderWithQueryClient = (ui: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined) => {
+    const queryClient = new QueryClient();
+    return render(
+        <QueryClientProvider client={queryClient}>
+            {ui}
+        </QueryClientProvider>
+    );
+};
 
 describe('App Component', () => {
     it('renders the main heading', () => {
@@ -53,4 +63,22 @@ describe('App Component', () => {
         })
         expect(skills).toBeInTheDocument()
     })
+});
+
+it('opens and closes the ExchangeModal', async () => {
+    renderWithQueryClient(<App />);
+
+    const openModalButton = screen.getByRole('button', {
+        name: /open modal/i,
+    });
+    fireEvent.click(openModalButton);
+    const modal = screen.queryByRole('dialog');
+    expect(modal).toBeInTheDocument();
+    const closeModalButton = screen.getByRole('button', {
+        name: /close/i,
+    });
+    fireEvent.click(closeModalButton);
+    await waitFor(() => {
+        expect(modal).toHaveStyle('display: none');
+    });
 });

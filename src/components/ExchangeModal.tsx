@@ -27,11 +27,10 @@ const ExchangeModal = ({ setExchangeModal }: any) => {
             };
             addMutationExchange(userSwap, {
                 onSuccess: () => {
-
                     message.success('добавлен курс доллара')
                     setBuyRate("");
                     setSaleRate("");
-                    // setExchangeModal(false);
+                    setExchangeModal(false);
                 },
                 onError: (error: any) => {
                     message.error(error.response?.data.message)
@@ -73,8 +72,10 @@ const ExchangeModal = ({ setExchangeModal }: any) => {
                 {
                     isLoading ? <p>Loading...</p> :
                         data?.length === 0 ? <p>Нет данных</p> :
-                            data?.map((item: any) => (
-                                <div key={item.id} className="flex items-center gap-2">
+                            data?.map((item: any, index: number) => (
+                                <div key={index} className="flex items-center gap-2"
+                                    ref={index === data.length - 1 ? ref : null}
+                                >
                                     {/* <p>{item.id}</p> */}
                                     {/* <p>{item.createdAt}</p> */}
                                     <p>{item.buyRate}</p>

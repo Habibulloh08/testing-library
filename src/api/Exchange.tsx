@@ -49,9 +49,7 @@ export const useChangeSwap = () => {
             }) => api.post("/cashflow/exchange-rates", data),
 
         onSuccess: () => {
-
             queryClient.invalidateQueries({ queryKey: ['exchangeData'] });
-
         },
     });
 
