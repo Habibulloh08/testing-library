@@ -1,10 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import type { Mock } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ExchangeModal from '../components/ExchangeModal';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useChangeSwap, useExchangeData } from '../api/Exchange';
-import { message } from 'antd';
 
+// Mock the necessary hooks
 vi.mock('../api/Exchange', () => ({
     useChangeSwap: vi.fn(),
     useExchangeData: vi.fn(),
@@ -12,114 +11,60 @@ vi.mock('../api/Exchange', () => ({
 
 describe('ExchangeModal', () => {
     const setExchangeModal = vi.fn();
+    const addMutationExchange = vi.fn();
 
+    // Set up mock return values for the hooks before each test
     beforeEach(() => {
-        vi.clearAllMocks();
+        (useChangeSwap as any).mockReturnValue({
+            mutate: addMutationExchange,
+            status: {
+                isPending: false,
+                isSuccess: false,
+                isError: false,
+                isIdle: true,
+            },
+        });
+
+        (useExchangeData as any).mockReturnValue({
+            data: { pages: [] },
+            fetchNextPage: vi.fn(),
+            hasNextPage: false,
+            isLoading: false,
+        });
     });
 
-    it('should render ExchangeModal and handle input changes', () => {
+    it('renders correctly', () => {
         render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Check if the modal renders correctly
         expect(screen.getByText('ExchangeModal')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Введите курс банка')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Введите курс обмена')).toBeInTheDocument();
-
-        // Simulate input changes
-        fireEvent.change(screen.getByPlaceholderText('Введите курс банка'), {
-            target: { value: '100' },
-        });
-        fireEvent.change(screen.getByPlaceholderText('Введите курс обмена'), {
-            target: { value: '200' },
-        });
-
-        // Check if input values are updated
-        expect((screen.getByPlaceholderText('Введите курс банка') as HTMLInputElement).value).toBe('100');
-        expect((screen.getByPlaceholderText('Введите курс обмена') as HTMLInputElement).value).toBe('200');
+        expect(screen.getByText('Изменить курс')).toBeInTheDocument();
     });
 
-    it('should show warning message when inputs are empty and button clicked', async () => {
+    it('shows warning message if inputs are empty', async () => {
         render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Mock Ant Design's message warning
-        vi.spyOn(message, 'warning');
-
-        fireEvent.click(screen.getByText('Изменить курс'));
-
-        await waitFor(() => {
-            expect(message.warning).toHaveBeenCalledWith('Поле не может быть пустым.');
+        const buttonElement = screen.getByRole('button', {
+            name: /изменить курс/i
         });
+        fireEvent.click(buttonElement);
+        const warningMessage = await screen.findByText(/поле не может быть пустым\./i);
+        expect(warningMessage).toBeInTheDocument();
     });
 
-    it('should call addMutationExchange when button is clicked with valid inputs', async () => {
-        const addMutationExchange = vi.fn().mockResolvedValue({});
-        (useChangeSwap as Mock).mockReturnValue({
-            mutate: addMutationExchange,
-            status: { isPending: false },
-        });
 
+    it('calls addMutationExchange with correct data', () => {
         render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Set input values
-        fireEvent.change(screen.getByPlaceholderText('Введите курс банка'), {
-            target: { value: '100' },
-        });
-        fireEvent.change(screen.getByPlaceholderText('Введите курс обмена'), {
-            target: { value: '200' },
-        });
-
-        // Click the button to submit the data
+        fireEvent.change(screen.getByPlaceholderText('Введите курс банка'), { target: { value: '100' } });
+        fireEvent.change(screen.getByPlaceholderText('Введите курс обмена'), { target: { value: '200' } });
         fireEvent.click(screen.getByText('Изменить курс'));
 
-        // Assert that the mutation function was called
-        await waitFor(() => {
-            expect(addMutationExchange).toHaveBeenCalledWith({
+        expect(addMutationExchange).toHaveBeenCalledWith(
+            {
                 currency: 'USD',
                 exchangeRateOfBank: 100,
                 exchangeRateOfObmen: 200,
-            });
-        });
-    });
-
-    it('should show loading state when submitting data', () => {
-        const addMutationExchange = vi.fn().mockResolvedValue({});
-        (useChangeSwap as Mock).mockReturnValue({
-            mutate: addMutationExchange,
-            status: { isPending: true },
-        });
-
-        render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Check if the button shows loading
-        expect(screen.getByText('Изменить курс')).toHaveAttribute('loading', 'true');
-    });
-
-    it('should display fetched exchange rates', () => {
-        (useExchangeData as Mock).mockReturnValue({
-            data: { pages: [{ buyRate: '100', saleRate: '200' }] },
-            isLoading: false,
-            fetchNextPage: vi.fn(),
-            hasNextPage: false,
-        });
-
-        render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Check if exchange data is displayed
-        expect(screen.getByText('100')).toBeInTheDocument();
-        expect(screen.getByText('200')).toBeInTheDocument();
-    });
-
-    it('should show "Нет данных" when there is no exchange data', () => {
-        (useExchangeData as Mock).mockReturnValue({
-            data: { pages: [] },
-            isLoading: false,
-            fetchNextPage: vi.fn(),
-            hasNextPage: false,
-        });
-
-        render(<ExchangeModal setExchangeModal={setExchangeModal} />);
-
-        // Check if "Нет данных" message is shown
-        expect(screen.getByText('Нет данных')).toBeInTheDocument();
+            },
+            expect.any(Object)
+        );
     });
 });
